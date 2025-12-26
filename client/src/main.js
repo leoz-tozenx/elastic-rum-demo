@@ -12,6 +12,13 @@ const apm = initApm({
   distributedTracingOrigins: ['http://localhost:3000'],
 })
 
+// 模拟用户登录态
+apm.setUserContext({
+  id: 'your-uid',  // 替换为实际用户 ID
+  did: 'aaa-xxx-vvv-dddd',
+  username: 'user@example.com'  // 可选
+});
+
 document.querySelector('#app').innerHTML = `
   <div>
     <h1>Elastic RUM Service Map Demo</h1>
