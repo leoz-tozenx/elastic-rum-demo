@@ -1,8 +1,8 @@
-// 1. 初始化 APM (必须在引入其他模块之前)
+// 1. Server 端初始化 APM (必须在引入其他模块之前)
 const apm = require('elastic-apm-node').start({
-  serviceName: 'local-backend-api',   // 服务名称，会在 Service Map 中显示
-  serverUrl: process.env.APM_SERVER_URL || 'http://localhost:8200', // APM Server 地址
-  environment: 'local',
+  serviceName: 'local-backend-api', // 必填：在 Kibana 中显示的服务名称，用于区分不同的应用
+  serverUrl: process.env.APM_SERVER_URL || 'http://localhost:8200', // 必填：APM Server 的地址，数据会上报到这里
+  environment: 'local', // 选填：部署环境（如 'production', 'staging'），用于在 Kibana 中过滤数据
 });
 
 const express = require('express');

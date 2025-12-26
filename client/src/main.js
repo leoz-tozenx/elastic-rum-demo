@@ -1,14 +1,13 @@
 import './style.css'
 import { init as initApm } from '@elastic/apm-rum'
 
-// 初始化 APM SDK
+// Web 端初始化 APM SDK
 const apm = initApm({
-  serviceName: 'local-test-app',
-  serverUrl: 'http://localhost:8200',
-  serviceVersion: '0.0.1',
-  environment: 'local',
-  // 这样当请求发往 localhost:3000 时，后端就能串联起整个链路
-  distributedTracingOrigins: ['http://localhost:3000'],
+  serviceName: 'local-test-app', // 必填：在 Kibana 中显示的服务名称，用于区分不同的应用
+  serverUrl: 'http://localhost:8200', // 必填：APM Server 的地址，数据会上报到这里
+  serviceVersion: '0.0.1', // 关键：用于匹配 Source Map 文件以通过堆栈还原源码，也是版本发布追踪的标识
+  environment: 'local', // 选填：部署环境（如 'production', 'staging'），用于在 Kibana 中过滤数据
+  distributedTracingOrigins: ['http://localhost:3000'], // 分布式追踪设置：只有发往这些域名的请求才会自动附带 traceparent 头
 })
 
 // 模拟用户登录态
