@@ -7,7 +7,6 @@ const apm = initApm({
   serverUrl: 'http://localhost:8200',
   serviceVersion: '0.0.1',
   environment: 'local',
-  // 关键配置：允许向哪些域发送分布式追踪头 (traceparent)
   // 这样当请求发往 localhost:3000 时，后端就能串联起整个链路
   distributedTracingOrigins: ['http://localhost:3000'],
 })
@@ -15,8 +14,12 @@ const apm = initApm({
 // 模拟用户登录态
 apm.setUserContext({
   id: 'your-uid',  // 替换为实际用户 ID
-  did: 'aaa-xxx-vvv-dddd',
   username: 'user@example.com'  // 可选
+});
+
+// 设置设备标识作为自定义上下文
+apm.addLabels({
+  device_id: 'aaa-xxx-vvv-dddd'
 });
 
 document.querySelector('#app').innerHTML = `
