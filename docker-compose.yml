@@ -1,0 +1,73 @@
+version: "3.8"
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.15
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200/_cluster/health"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.17.15
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5601/api/status"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  apm-server:
+    image: docker.elastic.co/apm/apm-server:7.17.15
+    command: >
+      apm-server -e
+        -E apm-server.rum.enabled=true
+        -E apm-server.rum.allow_origins=['*']
+        -E apm-server.kibana.enabled=true
+        -E apm-server.kibana.host=kibana:5601
+        -E output.elasticsearch.hosts=['elasticsearch:9200']
+    ports:
+      - "8200:8200"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      kibana:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8200/"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  server:
+    build: ./server
+    ports:
+      - "3000:3000"
+    environment:
+      - APM_SERVER_URL=http://apm-server:8200
+      - PORT=3000
+    depends_on:
+      apm-server:
+        condition: service_healthy
+
+  client:
+    build: ./client
+    ports:
+      - "4173:4173"
+    environment:
+      - APM_SERVER_URL=http://apm-server:8200
+    depends_on:
+      - server
+      - apm-server

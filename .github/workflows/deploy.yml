@@ -1,0 +1,61 @@
+name: Build and Upload Source Maps
+
+on:
+  push:
+    tags:
+      - "v*" # 仅当打 tag 发布版本时触发
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [admin, shop] # 定义所有的子应用
+        include:
+          - app: admin
+            base_url: "https://example.com/admin"
+          - app: shop
+            base_url: "https://example.com/shop"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install Dependencies
+        run: npm ci
+
+      # 1. 构建应用 (同时生成 .js 和 .js.map)
+      - name: Build ${{ matrix.app }}
+        run: |
+          # 假设你的构建命令是这样的
+          # 关键：Vite 配置中必须 sourcemap: true
+          npm run build --workspace=apps/${{ matrix.app }}
+
+      # 2. 上传 Source Map 到 Elastic APM (对用户不可见，只给 APM 用)
+      - name: Upload Source Maps to Elastic
+        run: |
+          node scripts/upload-sourcemaps.cjs \
+            --service=${{ matrix.app }} \
+            --version=${{ github.ref_name }} \
+            --base=${{ matrix.base_url }} \
+            --dist=./apps/${{ matrix.app }}/dist \
+            --server=${{ secrets.ELASTIC_APM_SERVER_URL }}
+        env:
+          # 如果开启了 Secret Token，需要在脚本里支持 Authorization 头
+          ELASTIC_APM_SECRET_TOKEN: ${{ secrets.ELASTIC_APM_SECRET_TOKEN }}
+
+      # 3. 删除 Source Map 文件 (这是关键！确保部署给用户的产物不含 .map)
+      - name: Remove Source Maps before Deploy
+        run: |
+          find ./apps/${{ matrix.app }}/dist -name "*.map" -type f -delete
+
+      # 4. 部署/发布静态资源 (此时只剩下 .js/.css)
+      - name: Deploy to CDN/Server
+        run: |
+          echo "Deploying ${{ matrix.app }} without maps..."
+          # 这里执行你的部署命令，例如 aws s3 cp ...
